@@ -29,6 +29,7 @@ Rather than immediately building a complex model, the engagement applied structu
 | Source repository | [GitHub](https://github.com/rajaraogurindapalli-gif/Churn-Critical-Thinking) | Full code, documentation, and notebooks |
 | Background documentation | `/docs` | Problem definition, scope, critical-thinking path, recommendations |
 | RAG notebook | `/notebooks` | Grounded qualitative analysis using internal evidence |
+| Limitations & lessons | [docs/12_LIMITATIONS_AND_LESSONS.md](12_LIMITATIONS_AND_LESSONS.md) | Transparency on boundaries and learning outcomes |
 
 ## 5. Recommended Next Actions (for a real organisation)
 1. Investigate the impact of the recent UI/product change on lower-usage customers.
@@ -40,6 +41,7 @@ Rather than immediately building a complex model, the engagement applied structu
 - All quantitative results in the demo are based on synthetic data designed to illustrate the analytical approach.
 - The methodology (problem reframing, multi-hypothesis evaluation, preference for interpretability, explicit uncertainty) is transferable to real organisational data.
 - The Streamlit application supports loading of external data via CSV upload or direct database connection.
+- Limitations and lessons learned are documented separately for transparency.
 
 ---
 
