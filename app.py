@@ -13,9 +13,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------------------
-# Synthetic data generation
-# ---------------------------
 @st.cache_data
 def generate_data(n=5000, seed=42):
     np.random.seed(seed)
@@ -28,21 +25,16 @@ def generate_data(n=5000, seed=42):
         "received_price_increase": np.random.choice([0, 1], n, p=[0.4, 0.6]),
         "experienced_ui_change": np.random.choice([0, 1], n, p=[0.3, 0.7]),
     })
-
     base = 0.04
     usage_effect = np.where(df["monthly_usage_hours"] < 10, 0.08, 0)
     ui_effect = np.where((df["experienced_ui_change"] == 1) & (df["monthly_usage_hours"] < 15), 0.06, 0)
     price_effect = np.where((df["received_price_increase"] == 1) & (df["monthly_usage_hours"] < 12), 0.03, 0)
     support_effect = np.where(df["support_tickets_last_90d"] >= 3, 0.04, 0)
     tenure_effect = np.where(df["tenure_months"] < 3, 0.03, 0)
-
     prob = np.clip(base + usage_effect + ui_effect + price_effect + support_effect + tenure_effect, 0, 0.6)
     df["churned"] = (np.random.rand(n) < prob).astype(int)
-
-    # Introduce some missing values
     missing_idx = np.random.choice(df.index, 150, replace=False)
     df.loc[missing_idx, "support_tickets_last_90d"] = np.nan
-
     return df
 
 def simple_risk_score(row):
@@ -57,137 +49,102 @@ def simple_risk_score(row):
         score += 1
     return score
 
-# ---------------------------
-# App layout
-# ---------------------------
+st.sidebar.header("Data Source")
+data_source = st.sidebar.radio(
+    "Choose how to load data",
+    ["Use synthetic demo data", "Upload CSV file", "Connect to database"]
+)
+
+df = None
+
+if data_source == "Upload CSV file":
+    uploaded = st.sidebar.file_uploader("Upload your churn CSV", type=["csv"])
+    if uploaded is not None:
+        df = pd.read_csv(uploaded)
+        st.sidebar.success(f"Loaded {len(df):,} rows from CSV")
+    else:
+        st.sidebar.info("Please upload a CSV file")
+
+elif data_source == "Connect to database":
+    st.sidebar.markdown("**Database connection**")
+    st.sidebar.caption("Credentials are used only in this session and are not stored.")
+    db_type = st.sidebar.selectbox("Database type", ["PostgreSQL", "MySQL", "SQLite"])
+    if db_type == "SQLite":
+        sqlite_path = st.sidebar.text_input("SQLite file path", "churn.db")
+        table_name = st.sidebar.text_input("Table name", "customers")
+        if st.sidebar.button("Load from SQLite"):
+            try:
+                import sqlite3
+                conn = sqlite3.connect(sqlite_path)
+                df = pd.read_sql(f"SELECT * FROM {table_name}", conn)
+                conn.close()
+                st.sidebar.success(f"Loaded {len(df):,} rows")
+            except Exception as e:
+                st.sidebar.error(str(e))
+    else:
+        host = st.sidebar.text_input("Host", "localhost")
+        port = st.sidebar.text_input("Port", "5432" if db_type == "PostgreSQL" else "3306")
+        database = st.sidebar.text_input("Database name")
+        user = st.sidebar.text_input("Username")
+        password = st.sidebar.text_input("Password", type="password")
+        table_name = st.sidebar.text_input("Table name", "customers")
+        if st.sidebar.button("Connect and load data"):
+            try:
+                from sqlalchemy import create_engine
+                if db_type == "PostgreSQL":
+                    url = f"postgresql://{user}:{password}@{host}:{port}/{database}"
+                else:
+                    url = f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
+                engine = create_engine(url)
+                df = pd.read_sql(f"SELECT * FROM {table_name}", engine)
+                st.sidebar.success(f"Loaded {len(df):,} rows")
+            except Exception as e:
+                st.sidebar.error(str(e))
+
+if df is None:
+    if data_source != "Use synthetic demo data":
+        st.info("Using synthetic demo data until you load your own.")
+    df = generate_data()
+
 st.title("Critical Thinking Applied to Customer Churn")
 st.markdown("""
 I built this app to show how I approach a high-pressure data science request.  
-Instead of immediately building a complex model, I applied critical thinking to reframe the problem, evaluate the data rigorously, and deliver a transparent, actionable solution.
+Users can load their own data via CSV upload or direct database connection.
 """)
 
 with st.sidebar:
-    st.header("About this project")
-    st.markdown("""
-    **Scenario**  
-    Leadership saw churn rise from ~4% to 7% and asked for a quick prediction model, believing a recent price increase was the main cause.
+    st.markdown("---")
+    st.header("About")
+    st.caption("Supports synthetic data, CSV, or database")
 
-    **My approach**  
-    - Reframe the problem  
-    - Interrogate the data  
-    - Test multiple hypotheses  
-    - Prefer a transparent score over a black-box model  
-    - Communicate uncertainty clearly
-    """)
-    st.caption("Portfolio project – synthetic data")
-
-df = generate_data()
-
-# Section 1: Problem Reframing
 st.header("1. Problem Reframing")
 col1, col2 = st.columns(2)
 with col1:
-    st.subheader("Stated request")
-    st.info("“Build a churn prediction model quickly so we can identify at-risk customers and intervene. We think the price increase is the main driver.”")
+    st.info("Stated: Build a model quickly. Price is the main driver.")
 with col2:
-    st.subheader("How I reframed it")
-    st.success("“Why did churn increase, which drivers are strongest and actionable, and what should we do next under time pressure?”")
+    st.success("Reframed: Why did churn rise and which drivers are actionable?")
 
-st.markdown("Reframing prevented me from locking into one hypothesis and one solution too early.")
+st.header("2. Data Preview")
+if "churned" in df.columns:
+    st.metric("Overall churn rate", f"{df['churned'].mean():.1%}")
+st.dataframe(df.head(8), use_container_width=True)
 
-# Section 2: Data Evaluation
-st.header("2. Data Evaluation")
-st.markdown("Before modeling, I examined base rates and key segments.")
+st.header("3. Risk Score & Model")
+st.markdown("The app calculates a transparent risk score and Logistic Regression baseline when the required columns are present.")
 
-overall = df["churned"].mean()
-st.metric("Overall churn rate", f"{overall:.1%}")
+if all(c in df.columns for c in ["monthly_usage_hours", "experienced_ui_change", "support_tickets_last_90d", "received_price_increase"]):
+    df["risk_score"] = df.apply(simple_risk_score, axis=1)
+    if "churned" in df.columns:
+        summary = df.groupby("risk_score")["churned"].mean().reset_index()
+        summary.columns = ["Risk Score", "Churn Rate"]
+        summary["Churn Rate"] = summary["Churn Rate"].apply(lambda x: f"{x:.1%}")
+        st.dataframe(summary, hide_index=True)
 
-def segment_rate(mask):
-    return df.loc[mask, "churned"].mean()
-
-segments = {
-    "Price increase = Yes": segment_rate(df["received_price_increase"] == 1),
-    "Price increase = No": segment_rate(df["received_price_increase"] == 0),
-    "Usage < 10 hrs": segment_rate(df["monthly_usage_hours"] < 10),
-    "Usage ≥ 10 hrs": segment_rate(df["monthly_usage_hours"] >= 10),
-    "UI change + low usage": segment_rate((df["experienced_ui_change"] == 1) & (df["monthly_usage_hours"] < 15)),
-    "High support tickets (≥3)": segment_rate(df["support_tickets_last_90d"] >= 3),
-    "New customers (<3 months)": segment_rate(df["tenure_months"] < 3),
-}
-
-seg_df = pd.DataFrame({
-    "Segment": list(segments.keys()),
-    "Churn Rate": [f"{v:.1%}" for v in segments.values()]
-})
-st.dataframe(seg_df, use_container_width=True, hide_index=True)
-
+st.header("4. Recommendation")
 st.markdown("""
-**Key observation:**  
-Low usage (especially combined with the recent UI change) shows a much larger lift than the price-increase flag.  
-Price is a contributing factor for a subset of customers, not the dominant driver.
+- Investigate usage and recent product changes first.  
+- Use a transparent score for targeting.  
+- Validate with a small experiment.
 """)
 
-# Section 3: Transparent Risk Score
-st.header("3. Transparent Risk Score")
-st.markdown("I created a simple, explainable score based on the strongest signals instead of jumping to a complex model.")
-
-df["risk_score"] = df.apply(simple_risk_score, axis=1)
-score_summary = df.groupby("risk_score")["churned"].agg(["mean", "count"]).reset_index()
-score_summary.columns = ["Risk Score", "Actual Churn Rate", "Customers"]
-score_summary["Actual Churn Rate"] = score_summary["Actual Churn Rate"].apply(lambda x: f"{x:.1%}")
-
-st.dataframe(score_summary, use_container_width=True, hide_index=True)
-
-st.markdown("""
-**Score logic (transparent):**
-- +2 if monthly usage < 10 hours  
-- +1 if UI change and usage < 15 hours  
-- +1 if support tickets ≥ 3  
-- +1 if price increase and usage < 12 hours  
-
-Higher scores clearly correspond to higher observed churn.
-""")
-
-# Section 4: Logistic Regression
-st.header("4. Logistic Regression Baseline")
-st.markdown("I also trained an interpretable Logistic Regression model as a baseline. It confirmed the same drivers.")
-
-features = ["monthly_usage_hours", "experienced_ui_change", "received_price_increase",
-            "support_tickets_last_90d", "tenure_months"]
-model_df = df.dropna(subset=features + ["churned"])
-
-X = model_df[features]
-y = model_df["churned"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-
-pipe = Pipeline([
-    ("scaler", StandardScaler()),
-    ("clf", LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42))
-])
-pipe.fit(X_train, y_train)
-
-auc = roc_auc_score(y_test, pipe.predict_proba(X_test)[:, 1])
-st.metric("Hold-out ROC-AUC", f"{auc:.3f}")
-
-coef = pd.Series(pipe.named_steps["clf"].coef_[0], index=features).sort_values(key=abs, ascending=False)
-coef_df = pd.DataFrame({"Feature": coef.index, "Coefficient": coef.values.round(3)})
-st.dataframe(coef_df, use_container_width=True, hide_index=True)
-
-st.markdown("Negative coefficient on usage hours means lower usage increases churn risk — consistent with the segment analysis.")
-
-# Section 5: Recommendation
-st.header("5. My Recommendation")
-st.markdown("""
-Instead of delivering only a prediction model, I recommended:
-
-1. Investigate and address the UI change’s impact on lower-usage customers.  
-2. Run a small experiment (usage prompts or improved onboarding) on the high-risk segment.  
-3. Use the transparent risk score for near-term targeting.  
-4. Treat price as a secondary factor concentrated among already low-engagement customers.  
-5. Improve data completeness on support interactions.
-
-This approach is faster to explain, easier to monitor, and more actionable under time pressure.
-""")
-
-st.divider()
-st.caption("Built as a portfolio project to demonstrate critical thinking, structured analysis, and interpretable modeling in a realistic data science scenario.")
+st.caption("End users can supply their own data from CSV or database.")
