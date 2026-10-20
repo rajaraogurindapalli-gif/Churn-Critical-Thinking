@@ -9,15 +9,20 @@ Add a Retrieval-Augmented Generation layer so conclusions are grounded in intern
 - LLM: `gemini-3.8-flash`
 - Retrieval: cosine similarity
 
-Successful outputs included:
-- Recognition that no direct evidence links the UI redesign to churn
-- Ranked alternative hypotheses with strength of document support
-- Explicit statements of what the evidence does *not* allow us to conclude
+## Example questions in the notebook
+1. What evidence, if any, directly links the UI redesign to higher churn?
+2. Generate three alternative hypotheses for the churn increase besides the price increase. Rank them by strength of support in the documents.
+3. What does the evidence not allow us to conclude?
+4. Write a short non-technical summary for leadership that states the strongest signals and the remaining uncertainties.
+5. Given the limited evidence and a tight deadline, what is the most practical next step leadership should take right now? Justify using only the documents.
+
+Successful outputs so far included recognition of missing causal links, ranked hypotheses, and explicit statements of what cannot be concluded.
 
 ## How it supports critical thinking
 - Surfaces multiple internal sources instead of only the price narrative
 - Forces the model to answer only from retrieved documents
 - Includes questions that ask what cannot be concluded
+- Ends with a practical recommendation under real constraints
 - Complements the quantitative analysis in the Streamlit app
 
 ## How to run
@@ -33,5 +38,5 @@ Successful outputs included:
 
 ## Relation to the main project
 - Streamlit app → quantitative diagnosis and transparent score  
-- RAG notebook → qualitative context and alternative hypotheses  
+- RAG notebook → qualitative context, alternative hypotheses, and practical next-step recommendation  
 Both are needed for a full critical-thinking response to the original leadership request.
