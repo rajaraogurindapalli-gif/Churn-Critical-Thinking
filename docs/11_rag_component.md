@@ -1,35 +1,36 @@
 # RAG Component – Critical Thinking Churn Project
 
 ## Purpose
-Add a Retrieval-Augmented Generation layer so that hypotheses and summaries are grounded in internal evidence rather than generated from general knowledge alone.
+Add a Retrieval-Augmented Generation layer so that hypotheses and summaries are grounded in internal evidence.
 
 ## Implementation
 - **Notebook:** `notebooks/RAG_Churn_Colab_Embeddings.ipynb`
-- **Embedding model:** `sentence-transformers/all-MiniLM-L6-v2` (free, runs on Colab)
-- **LLM:** Gemini (use `gemini-1.5-flash-latest` or `gemini-2.0-flash`)
+- **Embedding model:** `sentence-transformers/all-MiniLM-L6-v2`
+- **LLM:** Gemini (recommended: `gemini-2.5-flash` or `gemini-flash-latest`)
 - **Retrieval:** Cosine similarity over document embeddings
-
-## What it demonstrates
-- Building a small internal knowledge base
-- Semantic retrieval of relevant context
-- Grounded generation of alternative hypotheses and executive summaries
-- Alignment with critical thinking (evaluate from multiple sides using available evidence)
 
 ## How to run
 1. Open the notebook in Google Colab.
-2. Obtain a free Gemini API key from aistudio.google.com.
-3. Run all cells and enter the key when prompted.
+2. Get a free Gemini API key from aistudio.google.com.
+3. Run the cells and enter the key when prompted.
 
 ## Troubleshooting
-- **Protobuf dependency warnings** during `pip install` are common in Colab and can be ignored.
-- **Model not found error** (`models/gemini-1.5-flash is not found`):
-  - Change the model name in the notebook to one of:
-    - `gemini-1.5-flash-latest`
-    - `gemini-2.0-flash`
+- **Protobuf warnings** during install: ignore them.
+- **Model not found** (`gemini-1.5-flash` or similar):
+  - Older 1.5 model names are no longer available.
+  - Use one of these instead:
+    - `gemini-2.5-flash`
     - `gemini-flash-latest`
-  - Re-run the cell after the change.
-- If imports fail after install, restart the Colab runtime and run from the top.
+    - `gemini-3.8-flash`
+  - Or list models available to your key:
+    ```python
+    import google.generativeai as genai
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            print(m.name)
+    ```
+- Restart the Colab runtime if imports fail after install.
 
 ## Relation to the main project
-The Streamlit app performs structured quantitative analysis.  
-The RAG notebook supplements it by retrieving qualitative internal context.
+The Streamlit app does the quantitative analysis.  
+This notebook adds grounded qualitative context via RAG.
