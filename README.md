@@ -16,7 +16,8 @@ Instead of immediately training a complex model, I applied critical thinking:
 - Delivered clear, actionable recommendations with uncertainty stated
 
 ## Live App
-*(Add your Streamlit Cloud link here after deployment)*
+**Deploying on Streamlit Community Cloud**  
+*(Live link will be added here once deployment completes)*
 
 ## How to Run Locally
 ```bash
