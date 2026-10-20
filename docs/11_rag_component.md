@@ -1,31 +1,31 @@
 # RAG Component – Critical Thinking Churn Project
 
 ## Purpose
-Add a Retrieval-Augmented Generation layer so that hypotheses and summaries are grounded in internal evidence.
+Add a Retrieval-Augmented Generation layer so conclusions are grounded in internal evidence rather than a single preferred explanation.
 
-## Implementation
-- **Notebook:** `notebooks/RAG_Churn_Colab_Embeddings.ipynb`
-- **Embedding model:** `sentence-transformers/all-MiniLM-L6-v2`
-- **LLM:** `gemini-3.8-flash` (current recommended model)
-- **Retrieval:** Cosine similarity over document embeddings
+## Status
+**Verified working** (October 2026) with:
+- Embedding model: `sentence-transformers/all-MiniLM-L6-v2`
+- LLM: `gemini-3.8-flash`
+- Retrieval: cosine similarity
+
+## How it supports critical thinking
+- Surfaces multiple internal sources (UI changes, support themes, past analyses, onboarding) instead of only the price narrative.
+- Forces the model to answer only from retrieved documents.
+- Includes questions that explicitly ask what the evidence does *not* support.
+- Complements the quantitative segment analysis in the Streamlit app.
 
 ## How to run
-1. Open the notebook in Google Colab.
-2. Get a free Gemini API key from aistudio.google.com.
-3. Run the cells and enter the key when prompted.
+1. Open `notebooks/RAG_Churn_Colab_Embeddings.ipynb` in Google Colab.
+2. Enter a free Gemini API key when prompted.
+3. Run all cells.
 
 ## Troubleshooting
-- Protobuf warnings during install can be ignored.
-- Older model names (`gemini-1.5-flash`, `gemini-2.5-flash`, etc.) are no longer available to new users.
-- Use **`gemini-3.8-flash`** (as recommended by the API error message).
-- To list models available to your key:
-  ```python
-  import google.generativeai as genai
-  for m in genai.list_models():
-      if 'generateContent' in m.supported_generation_methods:
-          print(m.name)
-  ```
+- Protobuf warnings on install can be ignored.
+- Use `gemini-3.8-flash` (older model names are no longer available to new users).
+- Restart the Colab runtime if imports fail after the pip install.
 
 ## Relation to the main project
-The Streamlit app performs the quantitative analysis.  
-This notebook adds grounded qualitative context via RAG.
+- Streamlit app → quantitative diagnosis and transparent score  
+- RAG notebook → qualitative context and alternative hypotheses  
+Both are needed for a full critical-thinking response to the original leadership request.
